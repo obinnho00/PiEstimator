@@ -1,0 +1,36 @@
+import java.util.concurrent.ThreadLocalRandom;
+
+public class PiEstimator {
+    private static int count = 0;
+    
+    public static void main(String[] args) throws InterruptedException {
+        int numThreads = Runtime.getRuntime().availableProcessors();
+        int numPoints = 100000000;
+        int pointsPerThread = numPoints / numThreads;
+        
+        Thread[] threads = new Thread[numThreads];
+        for (int i = 0; i < numThreads; i++) {
+            threads[i] = new Thread(() -> {
+                int localCount = 0;
+                for (int j = 0; j < pointsPerThread; j++) {
+                    double x = ThreadLocalRandom.current().nextDouble(-1, 1);
+                    double y = ThreadLocalRandom.current().nextDouble(-1, 1);
+                    if (x*x + y*y <= 1) {
+                        localCount++;
+                    }
+                }
+                synchronized(PiEstimator.class) {
+                    count += localCount;
+                }
+            });
+            threads[i].start();
+        }
+        
+        for (Thread t : threads) {
+            t.join();
+        }
+        
+        double pi = 4.0 * count / numPoints;
+        System.out.println("Estimated value of pi: " + pi);
+    }
+}
